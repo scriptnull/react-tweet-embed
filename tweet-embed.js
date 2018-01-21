@@ -16,27 +16,32 @@ function addScript (src, cb) {
 }
 
 class TweetEmbed extends React.Component {
-  componentDidMount () {
-    const renderTweet = () => {
-      window.twttr.ready().then(({ widgets }) => {
-        const { options, onTweetLoadSuccess, onTweetLoadError } = this.props
-        widgets
-          .createTweetEmbed(this.props.id, this._div, options)
-          .then(onTweetLoadSuccess)
-          .catch(onTweetLoadError)
-      })
-    }
+  renderTweet (id) {
+    window.twttr.ready().then(({ widgets }) => {
+      // createTweetEmbed appends the widget as child to the container
+      // So, delete the children of the container before creating the widget
+      if (this._div) { this._div.innerHTML = '' }
 
+      const { options, onTweetLoadSuccess, onTweetLoadError } = this.props
+      widgets
+        .createTweetEmbed(id, this._div, options)
+        .then(onTweetLoadSuccess)
+        .catch(onTweetLoadError)
+    })
+  }
+  componentDidMount () {
     if (!window.twttr) {
       const isLocal = window.location.protocol.indexOf('file') >= 0
       const protocol = isLocal ? this.props.protocol : ''
 
-      addScript(`${protocol}//platform.twitter.com/widgets.js`, renderTweet)
+      addScript(`${protocol}//platform.twitter.com/widgets.js`, this.renderTweet)
     } else {
-      renderTweet()
+      this.renderTweet(this.props.id)
     }
   }
-
+  componentWillUpdate (nextProps, nextState) {
+    this.renderTweet(nextProps.id)
+  }
   render () {
     return <div className={this.props.className} ref={(c) => {
       this._div = c
